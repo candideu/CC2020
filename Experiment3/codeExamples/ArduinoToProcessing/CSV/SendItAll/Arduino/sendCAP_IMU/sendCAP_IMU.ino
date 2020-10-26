@@ -1,4 +1,18 @@
-
+/* DIGF 6037 Creation & Computation
+ * Kate Hartman & Nick Puckett
+ * 
+ * 
+ * This example gets stable Pitch and Roll angles from the internal IMU
+ * on the Arduino Nano33 IOT using a complimentary filter
+ * 
+ * Interface via the Sparkfun LSM6DS3 library: https://github.com/sparkfun/SparkFun_LSM6DS3_Arduino_Library
+ * Filter Code by Trent Cleghorm: https://github.com/tcleg/Six_Axis_Complementary_Filter
+ * 
+ * Reads all 12 pins and writes a 1 or 0 separated by commas  
+ * 
+ * Combines both data streams into a single CSV message
+ * 
+ */
 #include <Wire.h>
 #include "Adafruit_MPR121.h"
 #include "SparkFunLSM6DS3.h"

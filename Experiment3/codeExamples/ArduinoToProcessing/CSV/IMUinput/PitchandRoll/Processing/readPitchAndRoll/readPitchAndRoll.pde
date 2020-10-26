@@ -1,8 +1,8 @@
 /*
 DIGF 6037 Creation & Computation
    Kate Hartman & Nick Puckett
-   Experiment 3 - Lab 2
-   Arduino to Processing - sending value for (3) analog values
+   
+   Arduino to Processing - sending 2 float values from the IMU
 
  Based on based on this Lab on the ITP Physical Computing site: 
  https://itp.nyu.edu/physcomp/labs/labs-serial-communication/two-way-duplex-serial-communication-using-an-arduino/

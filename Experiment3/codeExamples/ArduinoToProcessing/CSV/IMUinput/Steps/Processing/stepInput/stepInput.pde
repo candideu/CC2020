@@ -2,7 +2,7 @@
 DIGF 6037 Creation & Computation
    Kate Hartman & Nick Puckett
 
-   Arduino to Processing - sending 1 value from IMU data
+   Arduino to Processing - sending 1 value from IMU as step count data
 
  Based on based on this Lab on the ITP Physical Computing site: 
  https://itp.nyu.edu/physcomp/labs/labs-serial-communication/two-way-duplex-serial-communication-using-an-arduino/

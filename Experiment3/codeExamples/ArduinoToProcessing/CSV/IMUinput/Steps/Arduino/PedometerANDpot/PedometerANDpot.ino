@@ -1,4 +1,13 @@
-
+/* DIGF 6037 Creation & Computation
+ * Kate Hartman & Nick Puckett
+ * 
+ * 
+ * This example gets uses the IMU as a pedometer (step counter)
+ * It keeps the correct count but the responsiveness of sending the 
+ * value tends to depend on the rythm of the stepping
+ * 
+ * This example also reads an analog value on A0
+  */
 #include "SparkFunLSM6DS3.h"
 #include "Wire.h"
 
