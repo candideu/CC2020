@@ -17,7 +17,7 @@ int sensor2;
 
 
 void setup() {
-  size(800,100);
+  size(1023,1023);
   // List all the available serial ports in the console
   printArray(Serial.list());
 
@@ -34,9 +34,9 @@ void setup() {
 void draw() 
 {
   background(255);
-  fill(255,0,0,map(xPosition,0,1023,0,255));
+  fill(255,0,0);
   
-  ellipse(map(xPosition,0,1023,0,width),height/2, 50, 50);
+  ellipse(width/2,height/2,sensor1,sensor2);
   
   
 
