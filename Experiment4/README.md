@@ -1,4 +1,7 @@
-# Experiment 4: Networking - Developed by Olivia Prior 
+# Experiment 4: Networking - 
+Created by Olivia Prior
+
+
 Things you will need for this experiment:
 * Create a PubNub Account
 
