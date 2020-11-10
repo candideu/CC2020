@@ -1,5 +1,5 @@
 # Experiment 4: Networking - 
-Created by Olivia Prior
+*Created by Olivia Prior*
 
 
 Things you will need for this experiment:
@@ -157,9 +157,7 @@ Warsaw
   ![Find PubNub Keys 3](README%20Images/find-keys-3.png)
 
 4. In the sample code, place your Publish Key in the text where it says "Your publish key here", and your Subscribe key where it says "Your subscribe key here"
- - In Arduino
- 
-  ![PubNub Keys for Arduino](README%20Images/arduino-keys.png)
+
 
  - In a p5 Sketch
  
