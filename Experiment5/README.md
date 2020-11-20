@@ -81,16 +81,6 @@ There is a delay in the code to ensure that there is a WiFi connection, so any c
 
 If your PubNub credentials are placed correctly, you will receive the printed message: `Connected to PubNub Server`. 
  
- Connection Diagram for Arduino:
-![web to nano](README%20Images/web-to-nano.png)
-
-## Physical to Web 
-*An Arduino Nano is publishing the value of a potiometer from between 0-1024. This sketch subscribes to the channel the nano is publishing to, and receives that value. The value is mapped to the height of the screen. Every in coming value is drawn on the screen as a vertical and creates graph.* 
-
-Connection Diagram for Arduino:
-
-![nano to web](README%20Images/nano-to-web.png)
-
 ## Physical to Physical 
 *This example publishes the value of your potentiometer to a channel. The potentiometer controls the brightness of one LED on your circuit. On another channel, you are subscribed to receive the value of another person's potentiometer. This value controls the brightness of the other LED on your circuit.* 
 
