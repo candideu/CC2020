@@ -53,10 +53,6 @@ String JsonParamName1 = "publisher";
 String JsonParamName2 = "temperature";
 
 
-// incoming JSON variables
-const char* sender; // variable for the JSON value "sender" on an incoming message
-int incomingValue; // variable for the incoming temperature
-
 int serverCheckRate = 1000; //how often to publish/read data on PN
 unsigned long lastCheck; //time of last publish
 
