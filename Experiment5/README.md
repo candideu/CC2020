@@ -49,7 +49,11 @@ Experiment 4 was designed around using a single channel for all messages and sor
   ![Find PubNub Keys 2](README%20Images/find-keys-2.png)
   ![Find PubNub Keys 3](README%20Images/find-keys-3.png)
 
-4. In the sample code, place your Publish Key in the text where it says "Your publish key here", and your Subscribe key where it says "Your subscribe key here"
+4. Turn on Playback and Storage
+ 
+  ![Storage and Playback](README%20Images/storagePlayback.png)  
+
+5. In the sample code, place your Publish Key in the text where it says "Your publish key here", and your Subscribe key where it says "Your subscribe key here"
  - In Arduino
  
   ![PubNub Keys for Arduino](README%20Images/arduino-keys.png)
@@ -86,9 +90,7 @@ If your PubNub credentials are placed correctly, you will receive the printed me
 
 *This example requires **two different channel names** but uses the **same Publish and Subscribe keys**.* 
 
-Connection Diagram for User 1 & 2: 
 
-![User 1 & 2](README%20Images/nano-nano-1.png)
 
 
  
