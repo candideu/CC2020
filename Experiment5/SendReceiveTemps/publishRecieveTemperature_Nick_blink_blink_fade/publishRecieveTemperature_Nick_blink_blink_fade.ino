@@ -35,8 +35,8 @@ char pass[] = "Your WIFI password";
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 // pubnub keys
-extern char pubkey[] = "pub-c-f4f689cd-7936-4cf0-9cd1-46f8070a6e79";
-extern char subkey[] = "sub-c-5691f306-e64b-11ea-89a6-b2966c0cfe96";
+extern char pubkey[] = "YOUR PUB KEY";
+extern char subkey[] = "YOUR SUB KEY";
 
 // channel and ID data
 
@@ -286,12 +286,9 @@ int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
     analogWrite(avgPin,avgBrightness);
     
     avgBrightness += fadeIncrement;
-    Serial.println(fadeIncrement);
       if (avgBrightness <= minBrightVal || avgBrightness >= maxBrightVal) 
       {
         fadeIncrement *= -1;
-         Serial.println("*********************");
-         Serial.println(fadeIncrement);
       }
     
       lastAvgFade = millis();            //save the value in time that this switch occured, so we can use it again.
