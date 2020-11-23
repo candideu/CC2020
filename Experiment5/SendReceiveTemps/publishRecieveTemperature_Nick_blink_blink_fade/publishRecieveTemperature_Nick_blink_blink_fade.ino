@@ -69,15 +69,25 @@ LSM6DS3 myIMU(I2C_MODE, 0x6A); //Default constructor is I2C, addr 0x6B
 //some are calculated locally, some come from PubNub messages
 int nickTemperature = 0;  
 int kateTemperature = 0;  
-float avgTemperature;
+int avgTemperature;
 const char* inMessagePublisher; 
 
 
+///blinking
+unsigned long lastNickBlink;
+unsigned long lastKateBlink;
+unsigned long lastAvgFade;
 
+int nickBlinkPin = 11;
+int kateBlinkPin = 10;
+int avgPin = 9;
 
-
-
-void setup() {
+boolean nickBlinkState = false;
+boolean kateBlinkState = false;
+int avgBrightness;
+int fadeIncrement = 10;
+void setup() 
+{
   
   Serial.begin(9600);
 
@@ -85,6 +95,12 @@ void setup() {
   connectToPubNub();
   
   myIMU.begin();
+
+  //setup the Pins
+  pinMode(nickBlinkPin, OUTPUT);
+  pinMode(kateBlinkPin, OUTPUT);
+  pinMode(avgPin, OUTPUT);
+  
 }
 
 
@@ -97,8 +113,9 @@ nickTemperature = myIMU.readTempC();
 sendReceiveMessages(serverCheckRate);
 
 ///Do whatever you want with the data here!
-
-   
+blinkNick(nickTemperature);
+blinkKate(kateTemperature);
+fadeAverage(avgTemperature);   
 }
 
 void connectToPubNub()
@@ -214,4 +231,70 @@ void readMessage(char channel[])
     inputClient->stop();
   
 
+}
+
+
+void blinkNick(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBlink = 1000;
+int maxBlink = 100;
+
+int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
+
+  if((millis()-lastNickBlink)>=temperatureBlink)
+  {
+   nickBlinkState = !nickBlinkState;
+   digitalWrite(nickBlinkPin,nickBlinkState);
+   lastNickBlink = millis();  
+  }
+}
+
+void blinkKate(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBlink = 1000;
+int maxBlink = 100;
+
+int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
+
+  if((millis()-lastKateBlink)>=temperatureBlink)
+  {
+   kateBlinkState = !kateBlinkState;
+   digitalWrite(kateBlinkPin,kateBlinkState);
+   lastKateBlink = millis();  
+  }
+}
+
+void fadeAverage(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBrightVal = 0;     //sets the low point of the fade range
+int maxBrightVal = 255;   //sets the high point of the fade range
+
+
+int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
+
+    if(millis()-lastAvgFade>=fadeRate) //this very simple statement is the timer,
+    {                                          //it subtracts the value of the moment in time the last blink happened, and sees if that number is larger than your set blinking value
+    analogWrite(avgPin,avgBrightness);
+    
+    avgBrightness += fadeIncrement;
+    Serial.println(fadeIncrement);
+      if (avgBrightness <= minBrightVal || avgBrightness >= maxBrightVal) 
+      {
+        fadeIncrement *= -1;
+         Serial.println("*********************");
+         Serial.println(fadeIncrement);
+      }
+    
+      lastAvgFade = millis();            //save the value in time that this switch occured, so we can use it again.
+       
+     }
 }
