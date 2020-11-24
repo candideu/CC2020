@@ -93,7 +93,7 @@ If your PubNub credentials are placed correctly, you will receive the printed me
 
 There are 2 files included in this example that show the basic design method for designing these connections
 
-###Input your Wifi Details and PubNub keys
+### Input your Wifi Details and PubNub keys
 
 ```c++
 //**Details of your local Wifi Network
@@ -110,7 +110,7 @@ char pubkey[] = "YOUR PUB KEY";
 char subkey[] = "YOUR SUB KEY";
 ```
 
-###Input your myID data and channel names.
+### Input your myID data and channel names.
 These will be different for each user. Notice how the publish/subscribe channels are flipped
 
 **Nick**
@@ -134,7 +134,7 @@ char readChannel[] = "nickData"; // channel to read THEIR data
 
 ```
 
-###Define your JSON Objects that will handle sending/receiving message and define the names of the parameters
+### Define your JSON Objects that will handle sending/receiving message and define the names of the parameters
 
 ```c++
 // JSON variables
@@ -151,12 +151,12 @@ let dataToSend = {
   temperature:0
 }
 ```
-###Define the variables for the timer that polls the server
+### Define the variables for the timer that polls the server
 ```c++
 int serverCheckRate = 1000; //how often to publish/read data on PN
 unsigned long lastCheck; //time of last publish
 ```
-###Define the variables that will ulimately hold the information
+### Define the variables that will ulimately hold the information
 ```c++
 //These are the variables that will hold the values we will be using
 //some are calculated locally, some come from PubNub messages
@@ -165,7 +165,7 @@ int kateTemperature = 0;
 int avgTemperature;
 const char* inMessagePublisher; 
 ```
-###Define the varibles for the Timers, Pins, blink/fade
+### Define the varibles for the Timers, Pins, blink/fade
 ```c++
 ///blinking
 unsigned long lastNickBlink;
@@ -182,7 +182,7 @@ int avgBrightness;
 int fadeIncrement = 10;
 ```
 
-###Connecting to PubNub
+### Connecting to PubNub
 This example uses a function to handle connecting to the Wifi and Pubnub
 **connectToPubNub()***
 ```c++
@@ -211,7 +211,7 @@ void connectToPubNub()
   
 }
 ```
-###Reading / Sending Messages with a Timer
+### Reading / Sending Messages with a Timer
 This example uses a function called **sendReceiveMessages**. It takes a single argument that determines its frequency. Within that timer, it calls the functions that send and receive the messages.
 ```c++
 void sendReceiveMessages(int pollingRate)
@@ -236,7 +236,7 @@ void sendReceiveMessages(int pollingRate)
 ```
 
 
-###Sending Function
+### Sending Function
 This function takes a single argument of a channel name. This determines which channel you want to publish to. (If you want to publish to multiple channels, call the function multiple times with different channel arguments). Inside the function you can see where we use the JSON object we previously defined and the parameter names to assign the values to the message.
 ```c++
 void sendMessage(char channel[]) 
@@ -268,7 +268,7 @@ void sendMessage(char channel[])
 }
 ```
 
-###Reading Function
+### Reading Function
 This function takes a single argument of a channel name. This determines which channel you want to read from. (If you want to read from multiple channels, call the function multiple times with different channel arguments).  This method actually relies on the **history** functionality in Pubnub, so you need to have Storage/Playback enabled on your keyset. This method allows for both synchonous and asynchronous communication.
 ```c++
 void readMessage(char channel[]) 
@@ -313,7 +313,7 @@ void readMessage(char channel[])
 }
 ```
 
-###Display Functions
+### Display Functions
 These Functions take both the local and Network data and visualize them with LEDs
 ```c++
 void blinkNick(int inputValue)
@@ -379,7 +379,7 @@ int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
 }
 ```
 
-###By organizing the code this way, our loop code is very short
+### By organizing the code this way, our loop code is very short
 ```c++
 void loop() 
 {
