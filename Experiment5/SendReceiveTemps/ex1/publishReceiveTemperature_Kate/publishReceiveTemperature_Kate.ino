@@ -35,8 +35,8 @@ char pass[] = "Your WIFI password";
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 // pubnub keys
-extern char pubkey[] = "pub-c-f4f689cd-7936-4cf0-9cd1-46f8070a6e79";
-extern char subkey[] = "sub-c-5691f306-e64b-11ea-89a6-b2966c0cfe96";
+char pubkey[] = "YOUR PUB KEY";
+char subkey[] = "YOUR SUB KEY";
 
 // channel and ID data
 

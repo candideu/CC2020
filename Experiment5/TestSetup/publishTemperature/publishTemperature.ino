@@ -23,14 +23,8 @@ extern char pass[] = "Wifi Password";
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 // pubnub keys
-extern char pubkey[] = "YOUR PUB KEY";
-extern char subkey[] = "YOUR SUB KEY";
-
-
-
-
-
-
+char pubkey[] = "YOUR PUB KEY";
+char subkey[] = "YOUR SUB KEY";
 
 // outgoing JSON variables
 
