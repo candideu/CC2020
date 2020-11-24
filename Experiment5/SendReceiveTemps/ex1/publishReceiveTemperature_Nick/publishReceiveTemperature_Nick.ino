@@ -35,8 +35,8 @@ char pass[] = "Your WIFI password";
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 // pubnub keys
-extern char pubkey[] = "YOUR PUB KEY";
-extern char subkey[] = "YOUR SUB KEY";
+extern char pubkey[] = "pub-c-f4f689cd-7936-4cf0-9cd1-46f8070a6e79";
+extern char subkey[] = "sub-c-5691f306-e64b-11ea-89a6-b2966c0cfe96";
 
 // channel and ID data
 
@@ -52,6 +52,7 @@ StaticJsonDocument<200> inMessage; // JSON object for receiving the incoming val
 String JsonParamName1 = "publisher";
 String JsonParamName2 = "temperature";
 
+
 int serverCheckRate = 1000; //how often to publish/read data on PN
 unsigned long lastCheck; //time of last publish
 
@@ -64,25 +65,15 @@ LSM6DS3 myIMU(I2C_MODE, 0x6A); //Default constructor is I2C, addr 0x6B
 //some are calculated locally, some come from PubNub messages
 int nickTemperature = 0;  
 int kateTemperature = 0;  
-int avgTemperature;
+float avgTemperature;
 const char* inMessagePublisher; 
 
 
-///blinking
-unsigned long lastNickBlink;
-unsigned long lastKateBlink;
-unsigned long lastAvgFade;
 
-int nickBlinkPin = 11;
-int kateBlinkPin = 10;
-int avgPin = 9;
 
-boolean nickBlinkState = false;
-boolean kateBlinkState = false;
-int avgBrightness;
-int fadeIncrement = 10;
-void setup() 
-{
+
+
+void setup() {
   
   Serial.begin(9600);
 
@@ -90,12 +81,6 @@ void setup()
   connectToPubNub();
   
   myIMU.begin();
-
-  //setup the Pins
-  pinMode(nickBlinkPin, OUTPUT);
-  pinMode(kateBlinkPin, OUTPUT);
-  pinMode(avgPin, OUTPUT);
-  
 }
 
 
@@ -108,9 +93,8 @@ nickTemperature = myIMU.readTempC();
 sendReceiveMessages(serverCheckRate);
 
 ///Do whatever you want with the data here!
-blinkNick(nickTemperature);
-blinkKate(kateTemperature);
-fadeAverage(avgTemperature);   
+
+   
 }
 
 void connectToPubNub()
@@ -169,8 +153,8 @@ void sendMessage(char channel[])
   char msg[64]; // variable for the JSON to be serialized into for your outgoing message
   
   // assemble the JSON to publish
-  dataToSend[JsonParamName1] = myID; // first key value is sender: yourName
-  dataToSend[JsonParamName2] = nickTemperature; // second key value is the potiometer value: analogValue
+  dataToSend[JsonParamName1] = myID; // first key value is publisher
+  dataToSend[JsonParamName2] = nickTemperature; // second key value is the temperature
 
   serializeJson(dataToSend, msg); // serialize JSON to send - sending is the JSON object, and it is serializing it to the char msg
   Serial.println(msg);
@@ -226,67 +210,4 @@ void readMessage(char channel[])
     inputClient->stop();
   
 
-}
-
-
-void blinkNick(int inputValue)
-{
-int minTemp = 0;
-int maxTemp = 40;
-
-int minBlink = 1000;
-int maxBlink = 100;
-
-int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
-
-  if((millis()-lastNickBlink)>=temperatureBlink)
-  {
-   nickBlinkState = !nickBlinkState;
-   digitalWrite(nickBlinkPin,nickBlinkState);
-   lastNickBlink = millis();  
-  }
-}
-
-void blinkKate(int inputValue)
-{
-int minTemp = 0;
-int maxTemp = 40;
-
-int minBlink = 1000;
-int maxBlink = 100;
-
-int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
-
-  if((millis()-lastKateBlink)>=temperatureBlink)
-  {
-   kateBlinkState = !kateBlinkState;
-   digitalWrite(kateBlinkPin,kateBlinkState);
-   lastKateBlink = millis();  
-  }
-}
-
-void fadeAverage(int inputValue)
-{
-int minTemp = 0;
-int maxTemp = 40;
-
-int minBrightVal = 0;     //sets the low point of the fade range
-int maxBrightVal = 255;   //sets the high point of the fade range
-
-
-int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
-
-    if(millis()-lastAvgFade>=fadeRate) //this very simple statement is the timer,
-    {                                          //it subtracts the value of the moment in time the last blink happened, and sees if that number is larger than your set blinking value
-    analogWrite(avgPin,avgBrightness);
-    
-    avgBrightness += fadeIncrement;
-      if (avgBrightness <= minBrightVal || avgBrightness >= maxBrightVal) 
-      {
-        fadeIncrement *= -1;
-      }
-    
-      lastAvgFade = millis();            //save the value in time that this switch occured, so we can use it again.
-       
-     }
 }

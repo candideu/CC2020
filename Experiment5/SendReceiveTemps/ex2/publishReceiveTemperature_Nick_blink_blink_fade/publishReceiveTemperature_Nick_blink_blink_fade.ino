@@ -35,15 +35,15 @@ char pass[] = "Your WIFI password";
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 // pubnub keys
-extern char pubkey[] = "pub-c-f4f689cd-7936-4cf0-9cd1-46f8070a6e79";
-extern char subkey[] = "sub-c-5691f306-e64b-11ea-89a6-b2966c0cfe96";
+extern char pubkey[] = "YOUR PUB KEY";
+extern char subkey[] = "YOUR SUB KEY";
 
 // channel and ID data
 
-const char* myID = "Kate"; // place your name here, this will be put into your "sender" value for an outgoing messsage
+const char* myID = "Nick"; // place your name here, this will be put into your "sender" value for an outgoing messsage
 
-char publishChannel[] = "kateData"; // channel to publish YOUR data
-char readChannel[] = "nickData"; // channel to read THEIR data
+char publishChannel[] = "nickData"; // channel to publish YOUR data
+char readChannel[] = "kateData"; // channel to read THEIR data
 
 // JSON variables
 StaticJsonDocument<200> dataToSend; // The JSON from the outgoing message
@@ -64,15 +64,25 @@ LSM6DS3 myIMU(I2C_MODE, 0x6A); //Default constructor is I2C, addr 0x6B
 //some are calculated locally, some come from PubNub messages
 int nickTemperature = 0;  
 int kateTemperature = 0;  
-float avgTemperature;
+int avgTemperature;
 const char* inMessagePublisher; 
 
 
+///blinking
+unsigned long lastNickBlink;
+unsigned long lastKateBlink;
+unsigned long lastAvgFade;
 
+int nickBlinkPin = 11;
+int kateBlinkPin = 10;
+int avgPin = 9;
 
-
-
-void setup() {
+boolean nickBlinkState = false;
+boolean kateBlinkState = false;
+int avgBrightness;
+int fadeIncrement = 10;
+void setup() 
+{
   
   Serial.begin(9600);
 
@@ -80,29 +90,36 @@ void setup() {
   connectToPubNub();
   
   myIMU.begin();
+
+  //setup the Pins
+  pinMode(nickBlinkPin, OUTPUT);
+  pinMode(kateBlinkPin, OUTPUT);
+  pinMode(avgPin, OUTPUT);
+  
 }
 
 
 void loop() 
 {
 //read temperature from IMU  
-kateTemperature = myIMU.readTempC();
+nickTemperature = myIMU.readTempC();
 
 //send and receive messages with PubNub, based on a timer
 sendReceiveMessages(serverCheckRate);
 
 ///Do whatever you want with the data here!
-
-   
+blinkNick(nickTemperature);
+blinkKate(kateTemperature);
+fadeAverage(avgTemperature);   
 }
 
 void connectToPubNub()
 {
-     Serial.print("Attempting to connect to the network, SSID: ");
-    Serial.println(ssid); 
     // attempt to connect to Wifi network:
   while ( status != WL_CONNECTED) 
   {
+    Serial.print("Attempting to connect to the network, SSID: ");
+    Serial.println(ssid);
     status = WiFi.begin(ssid, pass);
     Serial.print("*");
 
@@ -152,8 +169,8 @@ void sendMessage(char channel[])
   char msg[64]; // variable for the JSON to be serialized into for your outgoing message
   
   // assemble the JSON to publish
-  dataToSend[JsonParamName1] = myID; // first key value is sender: yourName
-  dataToSend[JsonParamName2] = kateTemperature; // second key value is the potiometer value: analogValue
+  dataToSend[JsonParamName1] = myID; // first key value is sender: publisher
+  dataToSend[JsonParamName2] = nickTemperature; // second key value is the temperature value
 
   serializeJson(dataToSend, msg); // serialize JSON to send - sending is the JSON object, and it is serializing it to the char msg
   Serial.println(msg);
@@ -197,7 +214,7 @@ void readMessage(char channel[])
 
            //read the values from the message and store them in local variables 
            inMessagePublisher = inMessage[JsonParamName1]; // this is will be "their name"
-           nickTemperature = inMessage[JsonParamName2]; // the value of their Temperature sensor
+           kateTemperature = inMessage[JsonParamName2]; // the value of their Temperature sensor
 
            //calculate the average of the 2 temperatures
            avgTemperature = (kateTemperature+nickTemperature)/2;
@@ -209,4 +226,67 @@ void readMessage(char channel[])
     inputClient->stop();
   
 
+}
+
+
+void blinkNick(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBlink = 1000;
+int maxBlink = 100;
+
+int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
+
+  if((millis()-lastNickBlink)>=temperatureBlink)
+  {
+   nickBlinkState = !nickBlinkState;
+   digitalWrite(nickBlinkPin,nickBlinkState);
+   lastNickBlink = millis();  
+  }
+}
+
+void blinkKate(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBlink = 1000;
+int maxBlink = 100;
+
+int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
+
+  if((millis()-lastKateBlink)>=temperatureBlink)
+  {
+   kateBlinkState = !kateBlinkState;
+   digitalWrite(kateBlinkPin,kateBlinkState);
+   lastKateBlink = millis();  
+  }
+}
+
+void fadeAverage(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBrightVal = 0;     //sets the low point of the fade range
+int maxBrightVal = 255;   //sets the high point of the fade range
+
+
+int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
+
+    if(millis()-lastAvgFade>=fadeRate) //this very simple statement is the timer,
+    {                                          //it subtracts the value of the moment in time the last blink happened, and sees if that number is larger than your set blinking value
+    analogWrite(avgPin,avgBrightness);
+    
+    avgBrightness += fadeIncrement;
+      if (avgBrightness <= minBrightVal || avgBrightness >= maxBrightVal) 
+      {
+        fadeIncrement *= -1;
+      }
+    
+      lastAvgFade = millis();            //save the value in time that this switch occured, so we can use it again.
+       
+     }
 }

@@ -40,10 +40,10 @@ extern char subkey[] = "sub-c-5691f306-e64b-11ea-89a6-b2966c0cfe96";
 
 // channel and ID data
 
-const char* myID = "Nick"; // place your name here, this will be put into your "sender" value for an outgoing messsage
+const char* myID = "Kate"; // place your name here, this will be put into your "sender" value for an outgoing messsage
 
-char publishChannel[] = "nickData"; // channel to publish YOUR data
-char readChannel[] = "kateData"; // channel to read THEIR data
+char publishChannel[] = "kateData"; // channel to publish YOUR data
+char readChannel[] = "nickData"; // channel to read THEIR data
 
 // JSON variables
 StaticJsonDocument<200> dataToSend; // The JSON from the outgoing message
@@ -51,7 +51,6 @@ StaticJsonDocument<200> inMessage; // JSON object for receiving the incoming val
 //create the names of the parameters you will use in your message
 String JsonParamName1 = "publisher";
 String JsonParamName2 = "temperature";
-
 
 int serverCheckRate = 1000; //how often to publish/read data on PN
 unsigned long lastCheck; //time of last publish
@@ -87,7 +86,7 @@ void setup() {
 void loop() 
 {
 //read temperature from IMU  
-nickTemperature = myIMU.readTempC();
+kateTemperature = myIMU.readTempC();
 
 //send and receive messages with PubNub, based on a timer
 sendReceiveMessages(serverCheckRate);
@@ -99,11 +98,11 @@ sendReceiveMessages(serverCheckRate);
 
 void connectToPubNub()
 {
+     Serial.print("Attempting to connect to the network, SSID: ");
+    Serial.println(ssid); 
     // attempt to connect to Wifi network:
   while ( status != WL_CONNECTED) 
   {
-    Serial.print("Attempting to connect to the network, SSID: ");
-    Serial.println(ssid);
     status = WiFi.begin(ssid, pass);
     Serial.print("*");
 
@@ -153,8 +152,8 @@ void sendMessage(char channel[])
   char msg[64]; // variable for the JSON to be serialized into for your outgoing message
   
   // assemble the JSON to publish
-  dataToSend[JsonParamName1] = myID; // first key value is sender: yourName
-  dataToSend[JsonParamName2] = nickTemperature; // second key value is the potiometer value: analogValue
+  dataToSend[JsonParamName1] = myID; // first key value is publisher
+  dataToSend[JsonParamName2] = kateTemperature; // second key value is the temperature
 
   serializeJson(dataToSend, msg); // serialize JSON to send - sending is the JSON object, and it is serializing it to the char msg
   Serial.println(msg);
@@ -198,7 +197,7 @@ void readMessage(char channel[])
 
            //read the values from the message and store them in local variables 
            inMessagePublisher = inMessage[JsonParamName1]; // this is will be "their name"
-           kateTemperature = inMessage[JsonParamName2]; // the value of their Temperature sensor
+           nickTemperature = inMessage[JsonParamName2]; // the value of their Temperature sensor
 
            //calculate the average of the 2 temperatures
            avgTemperature = (kateTemperature+nickTemperature)/2;
