@@ -85,10 +85,320 @@ There is a delay in the code to ensure that there is a WiFi connection, so any c
 
 If your PubNub credentials are placed correctly, you will receive the printed message: `Connected to PubNub Server`. 
  
-## Physical to Physical 
-*This example publishes the value of your potentiometer to a channel. The potentiometer controls the brightness of one LED on your circuit. On another channel, you are subscribed to receive the value of another person's potentiometer. This value controls the brightness of the other LED on your circuit.* 
+## Blink Blink Fade
+*This example uses the onboard temperature sensor on the NANO33 IOT. It displays the local temperature value as a blink rate of an LED attached to Pin 9. It also shows the temperature value of the remote user that you get via PubNub throught the blinking rate of an LED connected to pin 10. It also calculates the average of the 2 temperatures and displays it as a pulsing LED attached to pin 11* 
 
 *This example requires **two different channel names** but uses the **same Publish and Subscribe keys**.* 
+![Blink Blink Fade connections](README%20Images/blinkblinkFade.png)
+
+There are 2 files included in this example that show the basic design method for designing these connections
+
+###Input your Wifi Details and PubNub keys
+
+```c++
+//**Details of your local Wifi Network
+
+//Name of your access point
+char ssid[] = "The name of your WIFI";
+//Wifi password
+char pass[] = "Your WIFI password";
+
+int status = WL_IDLE_STATUS;       // the Wifi radio's status
+
+// pubnub keys
+char pubkey[] = "YOUR PUB KEY";
+char subkey[] = "YOUR SUB KEY";
+```
+
+###Input your myID data and channel names.
+These will be different for each user. Notice how the publish/subscribe channels are flipped
+
+**Nick**
+```c++
+// channel and ID data
+
+const char* myID = "Nick"; // place your name here, this will be put into your "sender" value for an outgoing messsage
+
+char publishChannel[] = "nickData"; // channel to publish YOUR data
+char readChannel[] = "kateData"; // channel to read THEIR data
+```
+
+**Kate**
+```c++
+// channel and ID data
+
+const char* myID = "Kate"; // place your name here, this will be put into your "sender" value for an outgoing messsage
+
+char publishChannel[] = "kateData"; // channel to publish YOUR data
+char readChannel[] = "nickData"; // channel to read THEIR data
+
+```
+
+###Define your JSON Objects that will handle sending/receiving message and define the names of the parameters
+
+```c++
+// JSON variables
+StaticJsonDocument<200> dataToSend; // The JSON from the outgoing message
+StaticJsonDocument<200> inMessage; // JSON object for receiving the incoming values
+//create the names of the parameters you will use in your message
+String JsonParamName1 = "publisher";
+String JsonParamName2 = "temperature";
+```
+This does the same as creating this object in javascript
+```json
+let dataToSend = {
+  publisher:"",
+  temperature:0
+}
+```
+###Define the variables for the timer that polls the server
+```c++
+int serverCheckRate = 1000; //how often to publish/read data on PN
+unsigned long lastCheck; //time of last publish
+```
+###Define the variables that will ulimately hold the information
+```c++
+//These are the variables that will hold the values we will be using
+//some are calculated locally, some come from PubNub messages
+int nickTemperature = 0;  
+int kateTemperature = 0;  
+int avgTemperature;
+const char* inMessagePublisher; 
+```
+###Define the varibles for the Timers, Pins, blink/fade
+```c++
+///blinking
+unsigned long lastNickBlink;
+unsigned long lastKateBlink;
+unsigned long lastAvgFade;
+
+int nickBlinkPin = 11;
+int kateBlinkPin = 10;
+int avgPin = 9;
+
+boolean nickBlinkState = false;
+boolean kateBlinkState = false;
+int avgBrightness;
+int fadeIncrement = 10;
+```
+
+###Connecting to PubNub
+This example uses a function to handle connecting to the Wifi and Pubnub
+**connectToPubNub()***
+```c++
+void connectToPubNub()
+{
+    // attempt to connect to Wifi network:
+  while ( status != WL_CONNECTED) 
+  {
+    Serial.print("Attempting to connect to the network, SSID: ");
+    Serial.println(ssid);
+    status = WiFi.begin(ssid, pass);
+    Serial.print("*");
+
+    // wait 2 seconds for connection:
+    delay(2000);
+  }
+
+  // once you are connected :
+  Serial.println();
+  Serial.print("You're connected to ");
+  Serial.println(ssid);
+  
+  PubNub.begin(pubkey, subkey);
+  Serial.println("Connected to PubNub Server");
+
+  
+}
+```
+###Reading / Sending Messages with a Timer
+This example uses a function called **sendReceiveMessages**. It takes a single argument that determines its frequency. Within that timer, it calls the functions that send and receive the messages.
+```c++
+void sendReceiveMessages(int pollingRate)
+{
+    //connect, publish new messages, and check for incoming
+    if((millis()-lastCheck)>=pollingRate)
+    {
+      //publish data
+      sendMessage(publishChannel); // publish this value to PubNub
+
+      //check for new incoming messages
+      readMessage(readChannel);
+      
+      //save the time so timer works
+      lastCheck=millis();
+    }
+
+
+  
+}
+
+```
+
+
+###Sending Function
+This function takes a single argument of a channel name. This determines which channel you want to publish to. (If you want to publish to multiple channels, call the function multiple times with different channel arguments). Inside the function you can see where we use the JSON object we previously defined and the parameter names to assign the values to the message.
+```c++
+void sendMessage(char channel[]) 
+{
+
+      Serial.print("Sending Message to ");
+      Serial.print(channel);
+      Serial.println(" Channel");
+  
+  char msg[64]; // variable for the JSON to be serialized into for your outgoing message
+  
+  // assemble the JSON to publish
+  dataToSend[JsonParamName1] = myID; // first key value is sender: publisher
+  dataToSend[JsonParamName2] = nickTemperature; // second key value is the temperature value
+
+  serializeJson(dataToSend, msg); // serialize JSON to send - sending is the JSON object, and it is serializing it to the char msg
+  Serial.println(msg);
+  
+  WiFiClient* client = PubNub.publish(channel, msg); // publish the variable char 
+  if (!client) 
+  {
+    Serial.println("publishing error"); // if there is an error print it out 
+  }
+  else
+  {
+  Serial.print("   ***SUCCESS"); 
+  }
+
+}
+```
+
+###Reading Function
+This function takes a single argument of a channel name. This determines which channel you want to read from. (If you want to read from multiple channels, call the function multiple times with different channel arguments).  This method actually relies on the **history** functionality in Pubnub, so you need to have Storage/Playback enabled on your keyset. This method allows for both synchonous and asynchronous communication.
+```c++
+void readMessage(char channel[]) 
+{
+  String msg;
+    auto inputClient = PubNub.history(channel,1);
+    if (!inputClient) 
+    {
+        Serial.println("message error");
+        delay(1000);
+        return;
+    }
+    HistoryCracker getMessage(inputClient);
+    while (!getMessage.finished()) 
+    {
+        getMessage.get(msg);
+        //basic error check to make sure the message has content
+        if (msg.length() > 0) 
+        {
+          Serial.print("**Received Message on ");
+          Serial.print(channel);
+          Serial.println(" Channel");
+          Serial.println(msg);
+          //parse the incoming text into the JSON object
+
+          deserializeJson(inMessage, msg); // parse the  JSON value received
+
+           //read the values from the message and store them in local variables 
+           inMessagePublisher = inMessage[JsonParamName1]; // this is will be "their name"
+           kateTemperature = inMessage[JsonParamName2]; // the value of their Temperature sensor
+
+           //calculate the average of the 2 temperatures
+           avgTemperature = (kateTemperature+nickTemperature)/2;
+
+           Serial.print("Current Average KateNick Temp: ");
+           Serial.println(avgTemperature);
+        }
+    }
+    inputClient->stop();
+  
+
+}
+```
+
+###Display Functions
+These Functions take both the local and Network data and visualize them with LEDs
+```c++
+void blinkNick(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBlink = 1000;
+int maxBlink = 100;
+
+int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
+
+  if((millis()-lastNickBlink)>=temperatureBlink)
+  {
+   nickBlinkState = !nickBlinkState;
+   digitalWrite(nickBlinkPin,nickBlinkState);
+   lastNickBlink = millis();  
+  }
+}
+
+void blinkKate(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBlink = 1000;
+int maxBlink = 100;
+
+int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
+
+  if((millis()-lastKateBlink)>=temperatureBlink)
+  {
+   kateBlinkState = !kateBlinkState;
+   digitalWrite(kateBlinkPin,kateBlinkState);
+   lastKateBlink = millis();  
+  }
+}
+
+void fadeAverage(int inputValue)
+{
+int minTemp = 0;
+int maxTemp = 40;
+
+int minBrightVal = 0;     //sets the low point of the fade range
+int maxBrightVal = 255;   //sets the high point of the fade range
+
+
+int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
+
+    if(millis()-lastAvgFade>=fadeRate) //this very simple statement is the timer,
+    {                                          //it subtracts the value of the moment in time the last blink happened, and sees if that number is larger than your set blinking value
+    analogWrite(avgPin,avgBrightness);
+    
+    avgBrightness += fadeIncrement;
+      if (avgBrightness <= minBrightVal || avgBrightness >= maxBrightVal) 
+      {
+        fadeIncrement *= -1;
+      }
+    
+      lastAvgFade = millis();            //save the value in time that this switch occured, so we can use it again.
+       
+     }
+}
+```
+
+###By organizing the code this way, our loop code is very short
+```c++
+void loop() 
+{
+//read temperature from IMU  
+nickTemperature = myIMU.readTempC();
+
+//send and receive messages with PubNub, based on a timer
+sendReceiveMessages(serverCheckRate);
+
+///Do whatever you want with the data here!
+blinkNick(nickTemperature);
+blinkKate(kateTemperature);
+fadeAverage(avgTemperature);   
+}
+```
+
+
+
+
 
 
 
