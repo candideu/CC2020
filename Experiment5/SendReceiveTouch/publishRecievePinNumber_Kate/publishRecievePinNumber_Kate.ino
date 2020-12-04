@@ -22,97 +22,89 @@ Inputs to update
 #define PubNub_BASE_CLIENT WiFiClient
 #include <PubNub.h>
 #include <ArduinoJson.h>
-#include <SparkFunLSM6DS3.h>
 #include "Wire.h"
+#include "Adafruit_MPR121.h"
+
+//mpr stuff
+
+#ifndef _BV
+#define _BV(bit) (1 << (bit)) 
+#endif
+
+Adafruit_MPR121 cap = Adafruit_MPR121();
+
+// Keeps track of the last pins touched
+uint16_t currtouched = 0;
+uint16_t lasttouched = 0;
+int tp = 12; //change this if you aren't using them all, start at pin 0
+
 
 //**Details of your local Wifi Network
 
 //Name of your access point
-char ssid[] = "The name of your WIFI";
+char ssid[] = "";
 //Wifi password
-char pass[] = "Your WIFI password";
+char pass[] = "";
 
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 // pubnub keys
-char pubkey[] = "YOUR PUB KEY";
-char subkey[] = "YOUR SUB KEY";
+char pubkey[] = "";
+char subkey[] = "";
 
 // channel and ID data
 
-const char* myID = "Nick"; // place your name here, this will be put into your "sender" value for an outgoing messsage
+const char* myID = "Kate"; // place your name here, this will be put into your "sender" value for an outgoing messsage
 
-char publishChannel[] = "nickData"; // channel to publish YOUR data
-char readChannel[] = "kateData"; // channel to read THEIR data
+char publishChannel[] = "kateData"; // channel to publish YOUR data
+char readChannel[] = "nickData"; // channel to read THEIR data
 
 // JSON variables
 StaticJsonDocument<200> dataToSend; // The JSON from the outgoing message
 StaticJsonDocument<200> inMessage; // JSON object for receiving the incoming values
 //create the names of the parameters you will use in your message
 String JsonParamName1 = "publisher";
-String JsonParamName2 = "temperature";
+String JsonParamName2 = "pinTouched";
 
-int serverCheckRate = 1000; //how often to publish/read data on PN
+
+
+int serverCheckRate = 1000; //how often to read data on PN
 unsigned long lastCheck; //time of last publish
 
 
-//create variable for the IMU
-LSM6DS3 myIMU(I2C_MODE, 0x6A); //Default constructor is I2C, addr 0x6B
-
-
-//These are the variables that will hold the values we will be using
-//some are calculated locally, some come from PubNub messages
-int nickTemperature = 0;  
-int kateTemperature = 0;  
-int avgTemperature;
 const char* inMessagePublisher; 
+int nickPinTouched;///the value Nick reads from Kates board via PN
+int katePinTouched;   //the value I get locally
 
 
-///blinking
-unsigned long lastNickBlink;
-unsigned long lastKateBlink;
-unsigned long lastAvgFade;
-
-int nickBlinkPin = 11;
-int kateBlinkPin = 10;
-int avgPin = 9;
-
-boolean nickBlinkState = false;
-boolean kateBlinkState = false;
-int avgBrightness;
-int fadeIncrement = 10;
 
 
-void setup() 
-{
+void setup() {
   
   Serial.begin(9600);
 
   //run this function to connect
   connectToPubNub();
   
-  myIMU.begin();
-
-  //setup the Pins
-  pinMode(nickBlinkPin, OUTPUT);
-  pinMode(kateBlinkPin, OUTPUT);
-  pinMode(avgPin, OUTPUT);
-  
+  if (!cap.begin(0x5A)) {
+    Serial.println("MPR121 not found, check wiring?");
+    while (1);
+  }
+  Serial.println("MPR121 found!");
 }
 
 
 void loop() 
 {
-//read temperature from IMU  
-nickTemperature = myIMU.readTempC();
+//read the capacitive sensor
+checkAllPins(12);
 
 //send and receive messages with PubNub, based on a timer
 sendReceiveMessages(serverCheckRate);
 
 ///Do whatever you want with the data here!
-blinkNick(nickTemperature);
-blinkKate(kateTemperature);
-fadeAverage(avgTemperature);   
+
+   
 }
 
 void connectToPubNub()
@@ -145,9 +137,6 @@ void sendReceiveMessages(int pollingRate)
     //connect, publish new messages, and check for incoming
     if((millis()-lastCheck)>=pollingRate)
     {
-      //publish data
-      sendMessage(publishChannel); // publish this value to PubNub
-
       //check for new incoming messages
       readMessage(readChannel);
       
@@ -171,8 +160,8 @@ void sendMessage(char channel[])
   char msg[64]; // variable for the JSON to be serialized into for your outgoing message
   
   // assemble the JSON to publish
-  dataToSend[JsonParamName1] = myID; // first key value is sender: publisher
-  dataToSend[JsonParamName2] = nickTemperature; // second key value is the temperature value
+  dataToSend[JsonParamName1] = myID; // first key value is sender: yourName
+  dataToSend[JsonParamName2] = nickPinTouched; // second key value is the Pin number
 
   serializeJson(dataToSend, msg); // serialize JSON to send - sending is the JSON object, and it is serializing it to the char msg
   Serial.println(msg);
@@ -188,6 +177,26 @@ void sendMessage(char channel[])
   }
 
 }
+void checkAllPins(int totalPins)
+{
+  // Get the currently touched pads
+  currtouched = cap.touched();
+  for (uint8_t i=0; i<totalPins; i++) 
+  {
+    // it if *is* touched and *wasnt* touched before, send a message
+    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) )
+    {
+      katePinTouched = i;
+      sendMessage(publishChannel);
+      
+    }
+
+  
+  }
+lasttouched = currtouched;
+  
+}
+
 
 void readMessage(char channel[]) 
 {
@@ -216,79 +225,11 @@ void readMessage(char channel[])
 
            //read the values from the message and store them in local variables 
            inMessagePublisher = inMessage[JsonParamName1]; // this is will be "their name"
-           kateTemperature = inMessage[JsonParamName2]; // the value of their Temperature sensor
+           nickPinTouched = inMessage[JsonParamName2]; // the value of their Temperature sensor
 
-           //calculate the average of the 2 temperatures
-           avgTemperature = (kateTemperature+nickTemperature)/2;
-
-           Serial.print("Current Average KateNick Temp: ");
-           Serial.println(avgTemperature);
         }
     }
     inputClient->stop();
   
 
-}
-
-
-void blinkNick(int inputValue)
-{
-int minTemp = 0;
-int maxTemp = 40;
-
-int minBlink = 1000;
-int maxBlink = 100;
-
-int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
-
-  if((millis()-lastNickBlink)>=temperatureBlink)
-  {
-   nickBlinkState = !nickBlinkState;
-   digitalWrite(nickBlinkPin,nickBlinkState);
-   lastNickBlink = millis();  
-  }
-}
-
-void blinkKate(int inputValue)
-{
-int minTemp = 0;
-int maxTemp = 40;
-
-int minBlink = 1000;
-int maxBlink = 100;
-
-int temperatureBlink = map(inputValue,minTemp,maxTemp,minBlink,maxBlink);
-
-  if((millis()-lastKateBlink)>=temperatureBlink)
-  {
-   kateBlinkState = !kateBlinkState;
-   digitalWrite(kateBlinkPin,kateBlinkState);
-   lastKateBlink = millis();  
-  }
-}
-
-void fadeAverage(int inputValue)
-{
-int minTemp = 0;
-int maxTemp = 40;
-
-int minBrightVal = 0;     //sets the low point of the fade range
-int maxBrightVal = 255;   //sets the high point of the fade range
-
-
-int fadeRate = map(inputValue,minTemp,maxTemp,1,50);
-
-    if(millis()-lastAvgFade>=fadeRate) //this very simple statement is the timer,
-    {                                          //it subtracts the value of the moment in time the last blink happened, and sees if that number is larger than your set blinking value
-    analogWrite(avgPin,avgBrightness);
-    
-    avgBrightness += fadeIncrement;
-      if (avgBrightness <= minBrightVal || avgBrightness >= maxBrightVal) 
-      {
-        fadeIncrement *= -1;
-      }
-    
-      lastAvgFade = millis();            //save the value in time that this switch occured, so we can use it again.
-       
-     }
 }

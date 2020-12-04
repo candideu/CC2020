@@ -54,7 +54,7 @@ void checkAllPins(int totalPins)
     // it if *is* touched set 1 if no set 0
     if ((currtouched & _BV(i)))
     {
-      Serial.print(1); 
+      Serial.print(i); 
     }
     else
     {
